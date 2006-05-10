@@ -40,12 +40,12 @@ username, password = auth()
 
 try:
 	a = anidb.AniDB(username, password)
-	t = a.ping()
-	if t:
-		print 'AniDB is reachable, %.3fs' % (t)
-	else:
-		print 'AniDB is unreachable.'
-		sys.exit(1)
+	#t = a.ping()
+	#if t:
+	#	print 'AniDB is reachable, %.3fs' % (t)
+	#else:
+	#	print 'AniDB is unreachable.'
+	#	sys.exit(1)
 	a.auth()
 	print 'Logged in as user %s.' % (username)
 	if a.new_version:
