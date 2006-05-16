@@ -1,0 +1,38 @@
+PyAniDB
+=========
+
+PyAniDB is a client for AniDB's UDP API. (http://anidb.net/)
+
+Installation
+============
+
+For manual installation; run:
+
+  ./setup.py build
+  sudo ./setup.py install
+
+Usage
+=====
+
+usage: anidb.py [options]
+
+options:
+  -h, --help            show this help message and exit
+  -u USERNAME, --username=USERNAME
+                        AniDB username.
+  -p PASSWORD, --password=PASSWORD
+                        AniDB password.
+  -r, --recursive       Recurse into directories.
+  -s SUFFIX, --suffix=SUFFIX
+                        File suffix for recursive matching.
+  -a, --add             Add files to mylist.
+
+Example:
+
+$ anidb.py -ar the\ third/
+  Logged in as user zyp.
+  Hashed: ed2k://|file|the third/[Ayu]_The_Third_-_Aoi_Hitomi_no_Shoujo_-_01_[02F71A89].avi|241101858|a282df72fe8bbb6a241c740566e46f91|
+  Added file: the third/[Ayu]_The_Third_-_Aoi_Hitomi_no_Shoujo_-_01_[02F71A89].avi
+  Hashed: ed2k://|file|the third/[Ayu]_The_Third_-_Aoi_Hitomi_no_Shoujo_-_02_[DDFB905E].avi|242085640|5c857e5dc73c88108f50f7566aeaa977|
+  Added file: the third/[Ayu]_The_Third_-_Aoi_Hitomi_no_Shoujo_-_02_[DDFB905E].avi
+  All operations finished.

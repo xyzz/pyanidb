@@ -1,0 +1,2 @@
+recursive-include pyanidb *.py
+include setup.py anidb.py README COPYING pyanidb.conf

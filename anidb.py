@@ -37,28 +37,11 @@ options, args = op.parse_args(sys.argv[1:])
 
 options.login = options.add
 
-# Authorization.
-
 if options.login:
 	if not options.username:
 		options.username = raw_input('Username: ')
 	if not options.password:
 		options.passord = getpass.getpass()
-	a = pyanidb.AniDB(options.username, options.password)
-	try:
-		a.auth()
-		print 'Logged in as user %s.' % (options.username)
-		if a.new_version:
-			print 'New version available.'
-	except pyanidb.AniDBUserError:
-		print 'Invalid username/password.'
-		sys.exit(1)
-	except pyanidb.AniDBTimeout:
-		print 'Connection timed out.'
-		sys.exit(1)
-	except pyanidb.AniDBError, e:
-		print 'Fatal error:', e
-		sys.exit(1)
 
 # Input files.
 
@@ -76,6 +59,29 @@ for name in args:
 				subdirs.sort()
 				subfiles.sort()
 				files += [os.path.join(root, file) for file in subfiles if sum([file.endswith('.' + suffix) for suffix in options.suffix])]
+
+if not files:
+	print 'All operations finished.'
+	sys.exit(0)
+
+# Authorization.
+
+if options.login:
+	a = pyanidb.AniDB(options.username, options.password)
+	try:
+		a.auth()
+		print 'Logged in as user %s.' % (options.username)
+		if a.new_version:
+			print 'New version available.'
+	except pyanidb.AniDBUserError:
+		print 'Invalid username/password.'
+		sys.exit(1)
+	except pyanidb.AniDBTimeout:
+		print 'Connection timed out.'
+		sys.exit(1)
+	except pyanidb.AniDBError, e:
+		print 'Fatal error:', e
+		sys.exit(1)
 
 # Hashing.
 
