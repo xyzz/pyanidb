@@ -6,4 +6,4 @@ from distutils.core import setup, Extension
 setup(
 	name='pyanidb',
 	packages = ['pyanidb'],
-	scripts = ['anidb_add'])
+	scripts = ['pyanidb.py'])
