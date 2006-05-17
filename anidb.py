@@ -26,8 +26,10 @@ op.add_option('-p', '--password', help = 'AniDB password.',
 op.add_option('-r', '--recursive', help = 'Recurse into directories.',
 	action = 'store_true', dest = 'recursive', default = False)
 op.add_option('-s', '--suffix', help = 'File suffix for recursive matching.',
-	action = 'append', dest = 'suffix', default = config['suffix'].split())
+	action = 'append', dest = 'suffix', default = config.get('suffix', '').split())
 
+op.add_option('-i', '--identify', help = 'Identify files.',
+	action = 'store_true', dest = 'identify', default = False)
 op.add_option('-a', '--add', help = 'Add files to mylist.',
 	action = 'store_true', dest = 'add', default = False)
 
@@ -35,7 +37,7 @@ options, args = op.parse_args(sys.argv[1:])
 
 # Defaults.
 
-options.login = options.add
+options.login = options.add or options.identify
 
 if options.login:
 	if not options.username:
@@ -71,8 +73,6 @@ if options.login:
 	try:
 		a.auth()
 		print 'Logged in as user %s.' % (options.username)
-		if a.new_version:
-			print 'New version available.'
 	except pyanidb.AniDBUserError:
 		print 'Invalid username/password.'
 		sys.exit(1)
@@ -88,21 +88,23 @@ if options.login:
 for filename, hash in pyanidb.hash.hash_files(files):
 	size = os.path.getsize(filename)
 	print 'Hashed: ed2k://|file|%s|%d|%s|' % (filename, size, hash.ed2k())
+	fid = (size, hash.ed2k())
 	
-	# Adding
-	
-	if options.add:
-		try:
-			while 1:
-				try:
-					a.add_hash(size, hash.ed2k())
-				except pyanidb.AniDBTimeout:
-					print 'Connection timed out, retrying.'
-					continue
-				break
+	try:
+		# Identify
+		
+		if options.identify:
+			info = a.get_file(fid, ('gname', 'romaji', 'epno', 'epromaji'), True)
+			fid = int(info['fid'])
+			print '[%s] %s - %s - %s' % (info['gname'], info['romaji'], info['epno'], info['epromaji'])
+		# Adding
+		
+		if options.add:
+			a.add_file(fid, retry = True)
 			print 'Added file: %s' % (filename)
-		except pyanidb.AniDBUnknownFile:
-			print 'Unknown file: %s' % (filename)
+		
+	except pyanidb.AniDBUnknownFile:
+		print 'Unknown file: %s' % (filename)
 
 # Finished.
 
