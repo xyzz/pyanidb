@@ -32,12 +32,21 @@ op.add_option('-i', '--identify', help = 'Identify files.',
 	action = 'store_true', dest = 'identify', default = False)
 op.add_option('-a', '--add', help = 'Add files to mylist.',
 	action = 'store_true', dest = 'add', default = False)
+op.add_option('-n', '--rename', help = 'Rename files.',
+	action = 'store_true', dest = 'rename', default = False)
+op.add_option('-f', '--format', help = 'Filename format.',
+	action = 'store', dest = 'format', default = config.get('format'))
 
 options, args = op.parse_args(sys.argv[1:])
 
 # Defaults.
 
+options.identify = options.identify or options.rename
 options.login = options.add or options.identify
+if not options.suffix:
+	options.suffix = ['avi', 'ogm', 'mkv']
+if not options.format:
+	options.format = r'_[%group]_%anime_-_%epno%ver_[%CRC].%suf'
 
 if options.login:
 	if not options.username:
@@ -91,20 +100,43 @@ for filename, hash in pyanidb.hash.hash_files(files):
 	fid = (size, hash.ed2k())
 	
 	try:
-		# Identify
+		
+		# Identify.
 		
 		if options.identify:
-			info = a.get_file(fid, ('gname', 'romaji', 'epno', 'epromaji'), True)
+			info = a.get_file(fid, ('gtag', 'romaji', 'epno', 'state', 'epromaji', 'crc32', 'filetype'), True)
 			fid = int(info['fid'])
-			print '[%s] %s - %s - %s' % (info['gname'], info['romaji'], info['epno'], info['epromaji'])
-		# Adding
+			print 'Identified: [%s] %s - %s - %s' % (info['gtag'], info['romaji'], info['epno'], info['epromaji'])
+		
+		# Renaming.
+		
+		if options.rename:
+			s = options.format
+			rename_data = {
+				'group': info['gtag'],
+				'anime': info['romaji'],
+				'epno': info['epno'],
+				'ver': {0: '', 4: 'v2', 8: 'v3', 16: 'v4', 32: 'v5'}[(int(info['state']) & 0x3c)],
+				'crc': info['crc32'],
+				'CRC': info['crc32'].upper(),
+				'suf': info['filetype']}
+			for name, value in rename_data.iteritems():
+				s = s.replace(r'%' + name, value)
+			if s[0] == '_':
+				s = s[1:].replace(' ', '_')
+			s = s.replace('/', '_')
+			
+			print 'Renaming to: %s' % (s)
+			os.rename(filename, os.path.join(os.path.split(filename)[0], s))
+		
+		# Adding.
 		
 		if options.add:
 			a.add_file(fid, retry = True)
-			print 'Added file: %s' % (filename)
+			print 'Added to mylist.'
 		
 	except pyanidb.AniDBUnknownFile:
-		print 'Unknown file: %s' % (filename)
+		print 'Unknown file.'
 
 # Finished.
 

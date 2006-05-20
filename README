@@ -25,7 +25,11 @@ options:
   -r, --recursive       Recurse into directories.
   -s SUFFIX, --suffix=SUFFIX
                         File suffix for recursive matching.
+  -i, --identify        Identify files.
   -a, --add             Add files to mylist.
+  -n, --rename          Rename files.
+  -f FORMAT, --format=FORMAT
+                        Filename format.
 
 Example:
 
