@@ -3,6 +3,13 @@
 import pyanidb, pyanidb.hash
 import ConfigParser, optparse, os, sys, getpass, multihash
 
+# Colors.
+
+red    = lambda x: '\x1b[1;31m' + x + '\x1b[0m'
+green  = lambda x: '\x1b[1;32m' + x + '\x1b[0m'
+yellow = lambda x: '\x1b[1;33m' + x + '\x1b[0m'
+blue   = lambda x: '\x1b[1;34m' + x + '\x1b[0m'
+
 # Config.
 
 config = {}
@@ -59,12 +66,12 @@ if options.login:
 files = []
 for name in args:
 	if not os.access(name, os.R_OK):
-		print 'Invalid file: %s' % (name)
+		print red('Invalid file:'), name
 	elif os.path.isfile(name):
 		files.append(name)
 	elif os.path.isdir(name):
 		if not options.recursive:
-			print 'Is a directory: %s' % (name)
+			print red('Is a directory:'), name
 		else:
 			for root, subdirs, subfiles in os.walk(name):
 				subdirs.sort()
@@ -72,7 +79,7 @@ for name in args:
 				files += [os.path.join(root, file) for file in subfiles if sum([file.endswith('.' + suffix) for suffix in options.suffix])]
 
 if not files:
-	print 'All operations finished.'
+	print blue('Nothing to do.')
 	sys.exit(0)
 
 # Authorization.
@@ -81,23 +88,26 @@ if options.login:
 	a = pyanidb.AniDB(options.username, options.password)
 	try:
 		a.auth()
-		print 'Logged in as user %s.' % (options.username)
+		print blue('Logged in as user:'), options.username
 	except pyanidb.AniDBUserError:
-		print 'Invalid username/password.'
+		print red('Invalid username/password.')
 		sys.exit(1)
 	except pyanidb.AniDBTimeout:
-		print 'Connection timed out.'
+		print red('Connection timed out.')
 		sys.exit(1)
 	except pyanidb.AniDBError, e:
-		print 'Fatal error:', e
+		print red('Fatal error:'), e
 		sys.exit(1)
 
 # Hashing.
 
+hashed = unknown = 0
+
 for filename, hash in pyanidb.hash.hash_files(files):
 	size = os.path.getsize(filename)
-	print 'Hashed: ed2k://|file|%s|%d|%s|' % (filename, size, hash.ed2k())
+	print blue('Hashed:'),  'ed2k://|file|%s|%d|%s|' % (filename, size, hash.ed2k())
 	fid = (size, hash.ed2k())
+	hashed += 1
 	
 	try:
 		
@@ -106,7 +116,7 @@ for filename, hash in pyanidb.hash.hash_files(files):
 		if options.identify:
 			info = a.get_file(fid, ('gtag', 'romaji', 'epno', 'state', 'epromaji', 'crc32', 'filetype'), True)
 			fid = int(info['fid'])
-			print 'Identified: [%s] %s - %s - %s' % (info['gtag'], info['romaji'], info['epno'], info['epromaji'])
+			print green('Identified:'), '[%s] %s - %s - %s' % (info['gtag'], info['romaji'], info['epno'], info['epromaji'])
 		
 		# Renaming.
 		
@@ -126,18 +136,19 @@ for filename, hash in pyanidb.hash.hash_files(files):
 				s = s[1:].replace(' ', '_')
 			s = s.replace('/', '_')
 			
-			print 'Renaming to: %s' % (s)
+			print yellow('Renaming to:'), s
 			os.rename(filename, os.path.join(os.path.split(filename)[0], s))
 		
 		# Adding.
 		
 		if options.add:
 			a.add_file(fid, retry = True)
-			print 'Added to mylist.'
+			print green('Added to mylist.')
 		
 	except pyanidb.AniDBUnknownFile:
-		print 'Unknown file.'
+		print red('Unknown file.')
+		unknown += 1
 
 # Finished.
 
-print 'All operations finished.'
+print blue('Hashed %d files%s.' % (hashed, (', %d unknown' % unknown) if unknown else ''))

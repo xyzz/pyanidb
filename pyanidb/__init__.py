@@ -25,7 +25,7 @@ acode = (
 	'short', 'synonym', 'category', '', '', '', '', '')
 
 info = fcode + acode
-info = dict([(info[i], 1 << i) for i in xrange(len(info)) if info[i]])
+info = dict([(info[i], 1L << i) for i in xrange(len(info)) if info[i]])
 
 class AniDBError(Exception):
 	pass
@@ -121,7 +121,7 @@ class AniDB:
 		info_codes = list(info_codes)
 		info_codes.sort(lambda x, y: cmp(info[x], info[y]))
 		info_code = sum([info[code] for code in info_codes])
-		code, text, data = self.execute('FILE s=%s&%s&fcode=%d&acode=%d' % (self.session, fid, info_code & 0xffffffff, info_code >> 32), retry)
+		code, text, data = self.execute('FILE s=%s&%s&fcode=%d&acode=%d' % (self.session, fid, info_code & 0xffffffffL, info_code >> 32), retry)
 		if code == 220:
 			return dict([(name, data[0].pop(0)) for name in ['fid'] + info_codes])
 		elif code == 320:
