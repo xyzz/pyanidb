@@ -1,15 +1,5 @@
 import multihash, threading, time
 
-def file_hash(name, algorithms):
-	h = multihash.Multihash(*algorithms)
-	f = open(name)
-	data = f.read(32768)	
-	while data:
-		h.update(data)
-		data = f.read(32768)
-	f.close()
-	return h
-
 class Hashthread(threading.Thread):
 	def __init__(self, filelist, hashlist, algorithms, *args, **kwargs):
 		self.filelist = filelist
@@ -20,7 +10,7 @@ class Hashthread(threading.Thread):
 		try:
 			while 1:
 				f = self.filelist.pop(0)
-				h = file_hash(f, self.algorithms)
+				h = multihash.hash_file(f, self.algorithms)
 				self.hashlist.append((f, h))
 		except IndexError:
 			return
