@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import pyanidb, pyanidb.hash
-import ConfigParser, optparse, os, sys, getpass, multihash
+import ConfigParser, optparse, os, sys, getpass
 
 # Colors.
 
@@ -34,6 +34,8 @@ op.add_option('-r', '--recursive', help = 'Recurse into directories.',
 	action = 'store_true', dest = 'recursive', default = False)
 op.add_option('-s', '--suffix', help = 'File suffix for recursive matching.',
 	action = 'append', dest = 'suffix', default = config.get('suffix', '').split())
+op.add_option('-c', '--no-cache', help = 'Do not use cached values.',
+	action = 'store_false', dest = 'cache', default = int(config.get('cache', '1')))
 
 op.add_option('-i', '--identify', help = 'Identify files.',
 	action = 'store_true', dest = 'identify', default = False)
@@ -48,6 +50,12 @@ options, args = op.parse_args(sys.argv[1:])
 
 # Defaults.
 
+if options.cache:
+	try:
+		import xattr
+	except ImportError:
+		print red('No xattr, caching disabled.')
+		options.cache = False
 options.identify = options.identify or options.rename
 options.login = options.add or options.identify
 if not options.suffix:
@@ -103,10 +111,9 @@ if options.login:
 
 hashed = unknown = 0
 
-for filename, hash in pyanidb.hash.hash_files(files):
-	size = os.path.getsize(filename)
-	print blue('Hashed:'),  'ed2k://|file|%s|%d|%s|' % (filename, size, hash.ed2k())
-	fid = (size, hash.ed2k())
+for file in pyanidb.hash.hash_files(files, options.cache):
+	print blue('Hashed:'),  'ed2k://|file|%s|%d|%s|%s' % (file.name, file.size, file.ed2k, ' (cached)' if file.cached else '')
+	fid = (file.size, file.ed2k)
 	hashed += 1
 	
 	try:
@@ -137,7 +144,7 @@ for filename, hash in pyanidb.hash.hash_files(files):
 			s = s.replace('/', '_')
 			
 			print yellow('Renaming to:'), s
-			os.rename(filename, os.path.join(os.path.split(filename)[0], s))
+			os.rename(file.name, os.path.join(os.path.split(file.name)[0], s))
 		
 		# Adding.
 		
