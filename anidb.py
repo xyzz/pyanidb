@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Get rid of annoying warning about API mismatch.
+import warnings
+warnings.filterwarnings('ignore', 'Python C API version mismatch for module _multihash: This Python has API version 1013, module _multihash has version 1012.', RuntimeWarning)
+
 import pyanidb, pyanidb.hash
 import ConfigParser, optparse, os, sys, getpass
 
@@ -37,6 +41,8 @@ op.add_option('-s', '--suffix', help = 'File suffix for recursive matching.',
 op.add_option('-c', '--no-cache', help = 'Do not use cached values.',
 	action = 'store_false', dest = 'cache', default = int(config.get('cache', '1')))
 
+op.add_option('-m', '--multihash', help = 'Calculate additional checksums.',
+	action = 'store_true', dest = 'multihash', default = False)
 op.add_option('-i', '--identify', help = 'Identify files.',
 	action = 'store_true', dest = 'identify', default = False)
 op.add_option('-a', '--add', help = 'Add files to mylist.',
@@ -111,12 +117,18 @@ if options.login:
 
 hashed = unknown = 0
 
-for file in pyanidb.hash.hash_files(files, options.cache):
+for file in pyanidb.hash.hash_files(files, options.cache, (('ed2k', 'md5', 'sha1', 'crc32') if options.multihash else ('ed2k',))):
 	print blue('Hashed:'),  'ed2k://|file|%s|%d|%s|%s' % (file.name, file.size, file.ed2k, ' (cached)' if file.cached else '')
 	fid = (file.size, file.ed2k)
 	hashed += 1
 	
 	try:
+		
+		# Multihash.
+		if options.multihash:
+			print blue('MD5:'), file.md5
+			print blue('SHA1:'), file.sha1
+			print blue('CRC32:'), file.crc32
 		
 		# Identify.
 		

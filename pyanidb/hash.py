@@ -29,12 +29,18 @@ class File:
 	
 	def write_cache(self):
 		try:
+			self.clear_cache()
 			xattr.setxattr(self.name, 'user.pyanidb.mtime', str(int(self.mtime)))
 			for n in ('ed2k', 'md5', 'sha1', 'crc32'):
 				if hasattr(self, n):
 					xattr.setxattr(self.name, 'user.pyanidb.' + n, getattr(self, n))
 		except IOError:
 			pass
+	
+	def clear_cache(self):
+		for name in xattr.listxattr(self.name):
+			if name.startswith('user.pyanidb.'):
+				xattr.removexattr(self.name, name)
 
 class Hashthread(threading.Thread):
 	def __init__(self, filelist, hashlist, algorithms, cache, *args, **kwargs):
@@ -51,7 +57,7 @@ class Hashthread(threading.Thread):
 		except IndexError:
 			return
 
-def hash_files(files, cache = False, num_threads = 1, algorithms = ('ed2k',)):
+def hash_files(files, cache = False, algorithms = ('ed2k',), num_threads = 1):
 	hashlist = []
 	threads = []
 	for x in xrange(num_threads):
