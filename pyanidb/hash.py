@@ -12,7 +12,7 @@ class File:
 		self.cached = False
 		if cache:
 			self.read_cache()
-		if sum([not hasattr(self, a) for a in algorithms]):
+		if False in [hasattr(self, a) for a in algorithms]:
 			self.cached = False
 			h = multihash.hash_file(name, algorithms)
 			for a in algorithms:
@@ -20,6 +20,8 @@ class File:
 			self.write_cache()
 	
 	def read_cache(self):
+		if not xattr:
+			return
 		cache = dict([(n[13:], xattr.getxattr(self.name, n)) for n in xattr.listxattr(self.name) if n.startswith('user.pyanidb.')])
 		if 'mtime' not in cache or str(int(self.mtime)) != cache.pop('mtime'):
 			return
@@ -28,6 +30,8 @@ class File:
 		self.cached = True
 	
 	def write_cache(self):
+		if not xattr:
+			return
 		try:
 			self.clear_cache()
 			xattr.setxattr(self.name, 'user.pyanidb.mtime', str(int(self.mtime)))

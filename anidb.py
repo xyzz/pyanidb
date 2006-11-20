@@ -90,7 +90,7 @@ for name in args:
 			for root, subdirs, subfiles in os.walk(name):
 				subdirs.sort()
 				subfiles.sort()
-				files += [os.path.join(root, file) for file in subfiles if sum([file.endswith('.' + suffix) for suffix in options.suffix])]
+				files += [os.path.join(root, file) for file in subfiles if True in [file.endswith('.' + suffix) for suffix in options.suffix]]
 
 if not files:
 	print blue('Nothing to do.')
