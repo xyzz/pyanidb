@@ -47,6 +47,9 @@ op.add_option('-i', '--identify', help = 'Identify files.',
 	action = 'store_true', dest = 'identify', default = False)
 op.add_option('-a', '--add', help = 'Add files to mylist.',
 	action = 'store_true', dest = 'add', default = False)
+op.add_option('-w', '--watched', help = 'Mark files watched.',
+	action = 'store_true', dest = 'watched', default = False)
+
 op.add_option('-n', '--rename', help = 'Rename files.',
 	action = 'store_true', dest = 'rename', default = False)
 op.add_option('-f', '--format', help = 'Filename format.',
@@ -63,7 +66,7 @@ if options.cache:
 		print red('No xattr, caching disabled.')
 		options.cache = False
 options.identify = options.identify or options.rename
-options.login = options.add or options.identify
+options.login = options.add or options.watched or options.identify
 if not options.suffix:
 	options.suffix = ['avi', 'ogm', 'mkv']
 if not options.format:
@@ -161,12 +164,21 @@ for file in pyanidb.hash.hash_files(files, options.cache, (('ed2k', 'md5', 'sha1
 		# Adding.
 		
 		if options.add:
-			a.add_file(fid, retry = True)
+			a.add_file(fid, viewed = options.watched, retry = True)
 			print green('Added to mylist.')
+		
+		# Watched.
+		
+		elif options.watched:
+			a.add_file(fid, viewed = True, edit = True, retry = True)
+			print green('Marked watched.')
 		
 	except pyanidb.AniDBUnknownFile:
 		print red('Unknown file.')
 		unknown += 1
+	
+	except pyanidb.AniDBNotInMylist:
+		print red('File not in mylist.')
 
 # Finished.
 

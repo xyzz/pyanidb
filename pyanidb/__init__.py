@@ -45,6 +45,9 @@ class AniDBReplyError(AniDBError):
 class AniDBUnknownFile(AniDBError):
 	pass
 
+class AniDBNotInMylist(AniDBError):
+	pass
+
 class AniDB:
 	def __init__(self, username, password, localport = 1234, server = ('api.anidb.info', 9000)):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -66,8 +69,11 @@ class AniDB:
 	def retry_msg(self):
 		print 'Connection timed out, retrying.'
 	
-	def execute(self, data, retry = False):
+	def execute(self, cmd, args = None, retry = False):
+		if not args:
+			args = {}
 		while 1:
+			data = '%s %s' % (cmd, '&'.join(['%s=%s' % a for a in args.iteritems()]))
 			t = time.time()
 			if t < self.lasttime + 2:
 				time.sleep(self.lasttime + 2 - t)
@@ -95,8 +101,8 @@ class AniDB:
 			return None
 	
 	def auth(self):
-		code, text, data = self.execute('AUTH user=%s&pass=%s&protover=%d&client=%s&clientver=%d' % (self.username, self.password, protover, client, clientver))
-		if code in [200, 201]:
+		code, text, data = self.execute('AUTH', {'user': self.username, 'pass': self.password, 'protover': protover, 'client': client, 'clientver': clientver})
+		if code in (200, 201):
 			self.session = text.split(' ', 1)[0]
 			if code == 201 and clientver:
 				self.newver_msg()
@@ -108,42 +114,62 @@ class AniDB:
 	def logout(self):
 		if self.session:
 			try:
-				self.execute('LOGOUT s=%s' % (self.session))
+				self.execute('LOGOUT', {'s': self.session})
 				self.session = ''
 			except AniDBError:
 				pass
 	
 	def get_file(self, fid, info_codes, retry = False):
 		try:
-			fid = 'size=%d&ed2k=%s' % fid
+			size, ed2k = fid
+			args = {'size': size, 'ed2k': ed2k}
 		except TypeError:
-			fid = 'fid=%d' % (fid)
+			args = {'fid': fid}
 		info_codes = list(info_codes)
 		info_codes.sort(lambda x, y: cmp(info[x], info[y]))
 		info_code = sum([info[code] for code in info_codes])
-		code, text, data = self.execute('FILE s=%s&%s&fcode=%d&acode=%d' % (self.session, fid, info_code & 0xffffffffL, info_code >> 32), retry)
-		if code == 220:
-			return dict([(name, data[0].pop(0)) for name in ['fid'] + info_codes])
-		elif code == 320:
-			raise AniDBUnknownFile()
-		elif code in [501, 506]:
-			self.auth()
-		else:
-			raise AniDBReplyError(code, text)
-		return code, text, data
-	
-	def add_file(self, fid, state = 'hdd', viewed = False, source = '', storage = '', other = '', retry = False):
-		try:
-			fid = 'size=%d&ed2k=%s' % fid
-		except TypeError:
-			fid = 'fid=%d' % (fid)
+		args.update({'s': self.session, 'fcode': info_code & 0xffffffffL, 'acode': info_code >> 32})
 		while 1:
-			code, text, data = self.execute('MYLISTADD s=%s&%s&state=%d&viewed=%d&source=%s&storage=%s&other=%s' % (self.session, fid, states[state], viewed and 1 or 0, source, storage, other), retry)
-			if code in [210, 310]:
+			code, text, data = self.execute('FILE', args, retry)
+			if code == 220:
+				return dict([(name, data[0].pop(0)) for name in ['fid'] + info_codes])
+			elif code == 320:
+				raise AniDBUnknownFile()
+			elif code in (501, 506):
+				self.auth()
+			else:
+				raise AniDBReplyError(code, text)
+	
+	def add_file(self, fid, state = None, viewed = False, source = None, storage = None, other = None, edit = False, retry = False):
+		try:
+			size, ed2k = fid
+			args = {'size': size, 'ed2k': ed2k}
+		except TypeError:
+			args = {'fid': fid}
+		if not edit and state == None:
+			state = 'hdd'
+		if state != None:
+			args['state'] = states[state]
+		if viewed != None:
+			args['viewed'] = int(bool(viewed))
+		if source != None:
+			args['source'] = source
+		if storage != None:
+			args['storage'] = storage
+		if other != None:
+			args['other'] = other
+		if edit:
+			args['edit'] = 1
+		args['s'] = self.session
+		while 1:
+			code, text, data = self.execute('MYLISTADD', args, retry)
+			if code in (210, 310, 311):
 				return
 			elif code == 320:
 				raise AniDBUnknownFile()
-			elif code in [501, 506]:
+			elif code == 411:
+				raise AniDBNotInMylist()
+			elif code in (501, 506):
 				self.auth()
 			else:
 				raise AniDBReplyError(code, text)
