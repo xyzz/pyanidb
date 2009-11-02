@@ -51,6 +51,9 @@ class AniDBNotInMylist(AniDBError):
 class AniDBUnknownAnime(AniDBError):
 	pass
 
+class AniDBUnknownDescription(AniDBError):
+	pass
+
 class AniDB:
 	def __init__(self, username, password, localport = 1234, server = ('api.anidb.info', 9000)):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -195,6 +198,27 @@ class AniDB:
 				return data[0]
 			elif code == 330:
 				raise AniDBUnknownAnime()
+			elif code in (501, 506):
+				self.auth()
+			else:
+				raise AniDBReplyError(code, text)
+
+	def get_animedesc(self, aid, retry = False):
+		args = {'aid': aid, 'part': 0, 's': self.session}
+		description = ''
+		while 1:
+			code, text, data = self.execute('ANIMEDESC', args, retry)
+			if code == 233:
+				curpart, maxpart, desc = data[0]
+				description += desc
+				if curpart == maxpart:
+					return description
+				else:
+					args['part'] = int(curpart)+1
+			elif code == 330:
+				raise AniDBUnknownAnime()
+			elif code == 333:
+				raise AnidBUnknownDescription()
 			elif code in (501, 506):
 				self.auth()
 			else:
