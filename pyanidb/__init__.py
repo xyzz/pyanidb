@@ -48,6 +48,9 @@ class AniDBUnknownFile(AniDBError):
 class AniDBNotInMylist(AniDBError):
 	pass
 
+class AniDBUnknownAnime(AniDBError):
+	pass
+
 class AniDB:
 	def __init__(self, username, password, localport = 1234, server = ('api.anidb.info', 9000)):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -169,6 +172,29 @@ class AniDB:
 				raise AniDBUnknownFile()
 			elif code == 411:
 				raise AniDBNotInMylist()
+			elif code in (501, 506):
+				self.auth()
+			else:
+				raise AniDBReplyError(code, text)
+
+	def get_anime(self, aid = None, aname = None, amask = None, retry = False):
+		args = {}
+		if not aid == None:
+			args['aid'] = aid
+		elif not aname == None:
+			args['aname'] == aname
+		else:
+			raise TypeError('must set either aid or aname')
+
+		args['amask'] = amask or '00'*7
+		args['s'] = self.session
+
+		while 1:
+			code, text, data = self.execute('ANIME', args, retry)
+			if code == 230:
+				return data[0]
+			elif code == 330:
+				raise AniDBUnknownAnime()
 			elif code in (501, 506):
 				self.auth()
 			else:
