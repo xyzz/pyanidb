@@ -59,7 +59,7 @@ class AniDB:
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.sock.bind(('0.0.0.0', localport))
 		self.sock.settimeout(10)
-		self.username = username.lower()
+		self.username = username
 		self.password = password
 		self.server = server
 		self.session = ''

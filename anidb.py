@@ -76,7 +76,7 @@ if options.login:
 	if not options.username:
 		options.username = raw_input('Username: ')
 	if not options.password:
-		options.passord = getpass.getpass()
+		options.password = getpass.getpass()
 
 # Input files.
 
