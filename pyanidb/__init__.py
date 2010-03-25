@@ -2,7 +2,7 @@ import socket, time
 
 protover = 3
 client = 'pyanidb'
-clientver = 0
+clientver = 5
 
 states = {
 	'unknown': 0,
@@ -110,7 +110,7 @@ class AniDB:
 		code, text, data = self.execute('AUTH', {'user': self.username, 'pass': self.password, 'protover': protover, 'client': client, 'clientver': clientver})
 		if code in (200, 201):
 			self.session = text.split(' ', 1)[0]
-			if code == 201 and clientver:
+			if code == 201:
 				self.newver_msg()
 		elif code == 500:
 			raise AniDBUserError()
