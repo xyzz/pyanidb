@@ -10,4 +10,4 @@ setup(
 	author_email = 'zyp@jvnv.net',
 	url = 'http://dev.jvnv.net/misc/',
 	packages = ['pyanidb'],
-	scripts = ['anidb.py'])
+	scripts = ['anidb'])
