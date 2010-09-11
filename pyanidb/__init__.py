@@ -2,7 +2,7 @@ import socket, time
 
 protover = 3
 client = 'pyanidb'
-clientver = 5
+clientver = 6
 
 states = {
 	'unknown': 0,

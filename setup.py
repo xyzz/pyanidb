@@ -5,9 +5,9 @@ from distutils.core import setup, Extension
 
 setup(
 	name = 'pyanidb',
-	version = '0.1.2',
-	author = 'Vegard Eriksen',
+	version = '0.2.0',
+	author = 'Vegard Storheil Eriksen',
 	author_email = 'zyp@jvnv.net',
-	url = 'http://dev.jvnv.net/misc/',
+	url = 'http://redmine.jvnv.net/projects/pyanidb/',
 	packages = ['pyanidb'],
 	scripts = ['anidb'])
