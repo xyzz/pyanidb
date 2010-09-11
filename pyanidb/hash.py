@@ -1,8 +1,38 @@
-import multihash, threading, time, os
+import threading, time, os, hashlib
 try:
 	import xattr
 except ImportError:
 	xattr = None
+
+class Hash:
+	def __init__(self, filename, algorithms):
+		update_list = [getattr(self, 'update_%s' % a) for a in algorithms]
+		self.md4_partial = hashlib.new('md4')
+		self.md4_final = hashlib.new('md4')
+		self.size_total = 0
+		f = open(filename)
+		data = f.read(131072)
+		while data:
+			for u in update_list:
+				u(data)
+			data = f.read(131072)
+	
+	def update_ed2k(self, data):
+		pos = 0
+		while pos < len(data):
+			if (not (self.size_total % 9728000)) and self.size_total:
+				self.md4_final.update(self.md4_partial.digest())
+				self.md4_partial = hashlib.new('md4')
+			size = min(len(data) - pos, 9728000 - (self.size_total % 9728000))
+			self.md4_partial.update(data[pos:pos + size])
+			pos += size
+			self.size_total += size
+	
+	def ed2k(self):
+		if self.size_total > 9728000:
+			self.md4_final.update(self.md4_partial.digest())
+			return self.md4_final.hexdigest()
+		return self.md4_partial.hexdigest()
 
 class File:
 	def __init__(self, name, algorithms, cache):
@@ -14,7 +44,7 @@ class File:
 			self.read_cache()
 		if False in [hasattr(self, a) for a in algorithms]:
 			self.cached = False
-			h = multihash.hash_file(name, algorithms)
+			h = Hash(name, algorithms)
 			for a in algorithms:
 				setattr(self, a, getattr(h, a)())
 			self.write_cache()
