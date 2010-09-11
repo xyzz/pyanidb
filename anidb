@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# Get rid of annoying warning about API mismatch.
-import warnings
-warnings.filterwarnings('ignore', 'Python C API version mismatch for module _multihash: This Python has API version 1013, module _multihash has version 1012.', RuntimeWarning)
-
 import pyanidb, pyanidb.hash
 import ConfigParser, optparse, os, sys, getpass
 from collections import deque
