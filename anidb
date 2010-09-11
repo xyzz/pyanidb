@@ -97,7 +97,7 @@ while remaining:
 				if sub.startswith('.'):
 					continue
 				sub = os.path.join(name, sub)
-				if os.path.isfile(name) and any(sub.endswith('.' + suffix) for suffix in options.suffix):
+				if os.path.isfile(sub) and any(sub.endswith('.' + suffix) for suffix in options.suffix):
 					files.append(sub)
 				elif os.path.isdir(sub):
 					remaining.appendleft(sub)
