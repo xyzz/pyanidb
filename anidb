@@ -6,6 +6,7 @@ warnings.filterwarnings('ignore', 'Python C API version mismatch for module _mul
 
 import pyanidb, pyanidb.hash
 import ConfigParser, optparse, os, sys, getpass
+from collections import deque
 
 # Colors.
 
@@ -81,7 +82,9 @@ if options.login:
 # Input files.
 
 files = []
-for name in args:
+remaining = deque(args)
+while remaining:
+	name = remaining.popleft()
 	if not os.access(name, os.R_OK):
 		print red('Invalid file:'), name
 	elif os.path.isfile(name):
@@ -90,10 +93,14 @@ for name in args:
 		if not options.recursive:
 			print red('Is a directory:'), name
 		else:
-			for root, subdirs, subfiles in os.walk(name):
-				subdirs.sort()
-				subfiles.sort()
-				files += [os.path.join(root, file) for file in subfiles if True in [file.endswith('.' + suffix) for suffix in options.suffix]]
+			for sub in sorted(os.listdir(name)):
+				if sub.startswith('.'):
+					continue
+				sub = os.path.join(name, sub)
+				if os.path.isfile(name) and any(sub.endswith('.' + suffix) for suffix in options.suffix):
+					files.append(sub)
+				elif os.path.isdir(sub):
+					remaining.appendleft(sub)
 
 if not files:
 	print blue('Nothing to do.')
