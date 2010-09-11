@@ -1,23 +1,16 @@
-import threading, time, os, hashlib
+import threading, time, os, hashlib, binascii
 try:
 	import xattr
 except ImportError:
 	xattr = None
 
-class Hash:
-	def __init__(self, filename, algorithms):
-		update_list = [getattr(self, 'update_%s' % a) for a in algorithms]
+class Ed2k:
+	def __init__(self):
 		self.md4_partial = hashlib.new('md4')
 		self.md4_final = hashlib.new('md4')
 		self.size_total = 0
-		f = open(filename)
-		data = f.read(131072)
-		while data:
-			for u in update_list:
-				u(data)
-			data = f.read(131072)
 	
-	def update_ed2k(self, data):
+	def update(self, data):
 		pos = 0
 		while pos < len(data):
 			if (not (self.size_total % 9728000)) and self.size_total:
@@ -28,11 +21,43 @@ class Hash:
 			pos += size
 			self.size_total += size
 	
-	def ed2k(self):
+	def hexdigest(self):
 		if self.size_total > 9728000:
 			self.md4_final.update(self.md4_partial.digest())
 			return self.md4_final.hexdigest()
 		return self.md4_partial.hexdigest()
+
+class Crc32:
+	def __init__(self):
+		self.s = 0
+	
+	def update(self, data):
+		self.s = binascii.crc32(data, self.s)
+	
+	def hexdigest(self):
+		return '%08x' % (self.s & 0xffffffff)
+
+hasher_obj = {
+	'ed2k': Ed2k,
+	'md5': lambda: hashlib.new('md5'),
+	'sha1': lambda: hashlib.new('sha1'),
+	'crc32': Crc32,
+}
+
+class Hash:
+	def __init__(self, filename, algorithms):
+		update_list = []
+		for a in algorithms:
+			h = hasher_obj[a]()
+			update_list.append(h.update)
+			setattr(self, a, h.hexdigest)
+		
+		f = open(filename)
+		data = f.read(131072)
+		while data:
+			for u in update_list:
+				u(data)
+			data = f.read(131072)
 
 class File:
 	def __init__(self, name, algorithms, cache):
