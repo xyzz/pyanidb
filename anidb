@@ -1,8 +1,16 @@
 #!/usr/bin/env python
 
 import pyanidb, pyanidb.hash
-import ConfigParser, optparse, os, sys, getpass
+try:
+	import ConfigParser
+except ImportError:
+	import configparser as ConfigParser
+import optparse, os, sys, getpass
 from collections import deque
+
+# Workaround for input/raw_input
+if hasattr(__builtins__, 'raw_input'):
+	input = raw_input
 
 # Colors.
 
@@ -60,7 +68,7 @@ if options.cache:
 	try:
 		import xattr
 	except ImportError:
-		print red('No xattr, caching disabled.')
+		print(red('No xattr, caching disabled.'))
 		options.cache = False
 options.identify = options.identify or options.rename
 options.login = options.add or options.watched or options.identify
@@ -71,7 +79,7 @@ if not options.format:
 
 if options.login:
 	if not options.username:
-		options.username = raw_input('Username: ')
+		options.username = input('Username: ')
 	if not options.password:
 		options.password = getpass.getpass()
 
@@ -82,12 +90,12 @@ remaining = deque(args)
 while remaining:
 	name = remaining.popleft()
 	if not os.access(name, os.R_OK):
-		print red('Invalid file:'), name
+		print('{0} {1}'.format(red('Invalid file:'), name))
 	elif os.path.isfile(name):
 		files.append(name)
 	elif os.path.isdir(name):
 		if not options.recursive:
-			print red('Is a directory:'), name
+			print('{0} {1}'.format(red('Is a directory:'), name))
 		else:
 			for sub in sorted(os.listdir(name)):
 				if sub.startswith('.'):
@@ -99,7 +107,7 @@ while remaining:
 					remaining.appendleft(sub)
 
 if not files:
-	print blue('Nothing to do.')
+	print(blue('Nothing to do.'))
 	sys.exit(0)
 
 # Authorization.
@@ -108,15 +116,15 @@ if options.login:
 	a = pyanidb.AniDB(options.username, options.password)
 	try:
 		a.auth()
-		print blue('Logged in as user:'), options.username
+		print('{0} {1}'.format(blue('Logged in as user:'), options.username))
 	except pyanidb.AniDBUserError:
-		print red('Invalid username/password.')
+		print(red('Invalid username/password.'))
 		sys.exit(1)
 	except pyanidb.AniDBTimeout:
-		print red('Connection timed out.')
+		print(red('Connection timed out.'))
 		sys.exit(1)
-	except pyanidb.AniDBError, e:
-		print red('Fatal error:'), e
+	except pyanidb.AniDBError as e:
+		print('{0} {1}'.format(red('Fatal error:'), e))
 		sys.exit(1)
 
 # Hashing.
@@ -124,7 +132,7 @@ if options.login:
 hashed = unknown = 0
 
 for file in pyanidb.hash.hash_files(files, options.cache, (('ed2k', 'md5', 'sha1', 'crc32') if options.multihash else ('ed2k',))):
-	print blue('Hashed:'),  'ed2k://|file|%s|%d|%s|%s' % (file.name, file.size, file.ed2k, ' (cached)' if file.cached else '')
+	print('{0} ed2k://|file|{1}|{2}|{3}|{4}'.format(blue('Hashed:'),  file.name, file.size, file.ed2k, ' (cached)' if file.cached else ''))
 	fid = (file.size, file.ed2k)
 	hashed += 1
 	
@@ -132,16 +140,16 @@ for file in pyanidb.hash.hash_files(files, options.cache, (('ed2k', 'md5', 'sha1
 		
 		# Multihash.
 		if options.multihash:
-			print blue('MD5:'), file.md5
-			print blue('SHA1:'), file.sha1
-			print blue('CRC32:'), file.crc32
+			print('{0} {1}'.format(blue('MD5:'), file.md5))
+			print('{0} {1}'.format(blue('SHA1:'), file.sha1))
+			print('{0} {1}'.format(blue('CRC32:'), file.crc32))
 		
 		# Identify.
 		
 		if options.identify:
 			info = a.get_file(fid, ('gtag', 'romaji', 'epno', 'state', 'epromaji', 'crc32', 'filetype'), True)
 			fid = int(info['fid'])
-			print green('Identified:'), '[%s] %s - %s - %s' % (info['gtag'], info['romaji'], info['epno'], info['epromaji'])
+			print('{0} [{1}] {2} - {3} - {4}'.format(green('Identified:'), info['gtag'], info['romaji'], info['epno'], info['epromaji']))
 		
 		# Renaming.
 		
@@ -155,34 +163,34 @@ for file in pyanidb.hash.hash_files(files, options.cache, (('ed2k', 'md5', 'sha1
 				'crc': info['crc32'],
 				'CRC': info['crc32'].upper(),
 				'suf': info['filetype']}
-			for name, value in rename_data.iteritems():
+			for name, value in rename_data.items():
 				s = s.replace(r'%' + name, value)
 			if s[0] == '_':
 				s = s[1:].replace(' ', '_')
 			s = s.replace('/', '_')
 			
-			print yellow('Renaming to:'), s
+			print('{0} {1}'.format(yellow('Renaming to:'), s))
 			os.rename(file.name, os.path.join(os.path.split(file.name)[0], s))
 		
 		# Adding.
 		
 		if options.add:
 			a.add_file(fid, viewed = options.watched, retry = True)
-			print green('Added to mylist.')
+			print(green('Added to mylist.'))
 		
 		# Watched.
 		
 		elif options.watched:
 			a.add_file(fid, viewed = True, edit = True, retry = True)
-			print green('Marked watched.')
+			print(green('Marked watched.'))
 		
 	except pyanidb.AniDBUnknownFile:
-		print red('Unknown file.')
+		print(red('Unknown file.'))
 		unknown += 1
 	
 	except pyanidb.AniDBNotInMylist:
-		print red('File not in mylist.')
+		print(red('File not in mylist.'))
 
 # Finished.
 
-print blue('Hashed %d files%s.' % (hashed, (', %d unknown' % unknown) if unknown else ''))
+print(blue('Hashed {0} files{1}.'.format(hashed, ', {0} unknown'.format(unknown) if unknown else '')))

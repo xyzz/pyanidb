@@ -35,7 +35,7 @@ class Crc32:
 		self.s = binascii.crc32(data, self.s)
 	
 	def hexdigest(self):
-		return '%08x' % (self.s & 0xffffffff)
+		return '{0:08x}'.format(self.s & 0xffffffff)
 
 hasher_obj = {
 	'ed2k': Ed2k,
@@ -52,7 +52,7 @@ class Hash:
 			update_list.append(h.update)
 			setattr(self, a, h.hexdigest)
 		
-		f = open(filename)
+		f = open(filename, 'rb')
 		data = f.read(131072)
 		while data:
 			for u in update_list:
@@ -80,7 +80,7 @@ class File:
 		cache = dict([(n[13:], xattr.getxattr(self.name, n)) for n in xattr.listxattr(self.name) if n.startswith('user.pyanidb.')])
 		if 'mtime' not in cache or str(int(self.mtime)) != cache.pop('mtime'):
 			return
-		for n, v in cache.iteritems():
+		for n, v in cache.items():
 			setattr(self, n, v)
 		self.cached = True
 	
@@ -119,7 +119,7 @@ class Hashthread(threading.Thread):
 def hash_files(files, cache = False, algorithms = ('ed2k',), num_threads = 1):
 	hashlist = []
 	threads = []
-	for x in xrange(num_threads):
+	for x in range(num_threads):
 		thread = Hashthread(files, hashlist, algorithms, cache)
 		thread.start()
 		threads.append(thread)

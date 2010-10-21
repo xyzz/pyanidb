@@ -2,7 +2,7 @@ import socket, time
 
 protover = 3
 client = 'pyanidb'
-clientver = 6
+clientver = 7
 
 states = {
 	'unknown': 0,
@@ -25,7 +25,7 @@ acode = (
 	'short', 'synonym', 'category', '', '', '', '', '')
 
 info = fcode + acode
-info = dict([(info[i], 1L << i) for i in xrange(len(info)) if info[i]])
+info = dict([(info[i], 1 << i) for i in range(len(info)) if info[i]])
 
 class AniDBError(Exception):
 	pass
@@ -70,23 +70,23 @@ class AniDB:
 		self.sock.close()
 	
 	def newver_msg(self):
-		print 'New version available.'
+		print('New version available.')
 	
 	def retry_msg(self):
-		print 'Connection timed out, retrying.'
+		print('Connection timed out, retrying.')
 	
 	def execute(self, cmd, args = None, retry = False):
 		if not args:
 			args = {}
 		while 1:
-			data = '%s %s' % (cmd, '&'.join(['%s=%s' % a for a in args.iteritems()]))
+			data = '{0} {1}\n'.format(cmd, '&'.join(['{0}={1}'.format(*a) for a in args.items()]))
 			t = time.time()
 			if t < self.lasttime + 2:
 				time.sleep(self.lasttime + 2 - t)
 			self.lasttime = time.time()
-			self.sock.sendto(data + '\n', self.server)
+			self.sock.sendto(data.encode(), 0, self.server)
 			try:
-				data = self.sock.recv(8192).split('\n')
+				data = self.sock.recv(8192).decode().split('\n')
 			except socket.timeout:
 				if retry:
 					self.retry_msg()
@@ -132,9 +132,9 @@ class AniDB:
 		except TypeError:
 			args = {'fid': fid}
 		info_codes = list(info_codes)
-		info_codes.sort(lambda x, y: cmp(info[x], info[y]))
+		info_codes.sort(key = lambda x: info[x])
 		info_code = sum([info[code] for code in info_codes])
-		args.update({'s': self.session, 'fcode': info_code & 0xffffffffL, 'acode': info_code >> 32})
+		args.update({'s': self.session, 'fcode': info_code & 0xffffffff, 'acode': info_code >> 32})
 		while 1:
 			code, text, data = self.execute('FILE', args, retry)
 			if code == 220:
