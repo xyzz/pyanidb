@@ -147,7 +147,7 @@ for file in pyanidb.hash.hash_files(files, options.cache, (('ed2k', 'md5', 'sha1
 		# Identify.
 		
 		if options.identify:
-			info = a.get_file(fid, ('gtag', 'romaji', 'epno', 'state', 'epromaji', 'crc32', 'filetype'), True)
+			info = a.get_file(fid, ('gtag', 'romaji', 'epno', 'state', 'epromaji', 'crc32', 'filetype', "epname", "source", "vres", "vcodec", "eptotal"), True)
 			fid = int(info['fid'])
 			print('{0} [{1}] {2} - {3} - {4}'.format(green('Identified:'), info['gtag'], info['romaji'], info['epno'], info['epromaji']))
 		
@@ -168,6 +168,24 @@ for file in pyanidb.hash.hash_files(files, options.cache, (('ed2k', 'md5', 'sha1
 			if s[0] == '_':
 				s = s[1:].replace(' ', '_')
 			s = s.replace('/', '_')
+
+			padlen = len(str(info["eptotal"]))
+			epno = info["epno"]
+			if epno[0] == 'S':
+				epno = "S{:02}".format(int(epno[1:]))
+			elif epno[0] == 'C':
+				epno = "S1{:02}".format(int(epno[1:]))
+			elif epno[0] == 'T':
+				epno = "S2{:02}".format(int(epno[1:]))
+			elif epno[0] == 'P':
+				epno = "S3{:02}".format(int(epno[1:]))
+			elif epno[0] == 'O':
+				epno = "S4{:02}".format(int(epno[1:]))
+			else:
+				epno = ("{:0" + str(padlen) + "}").format(int(epno))
+			vcodec = info["vcodec"].replace("H264/AVC", "h264")
+
+			s = "{anime} - {epno} - {name} [{group}][{source}][{res}][{codec}][{crc32}].{filetype}".format(anime=info["romaji"], epno=epno, name=info["epname"], group=info["gtag"], source=info["source"], res=info["vres"], codec=vcodec, crc32=info["crc32"].upper(), filetype=info["filetype"])
 			
 			print('{0} {1}'.format(yellow('Renaming to:'), s))
 			os.rename(file.name, os.path.join(os.path.split(file.name)[0], s))
